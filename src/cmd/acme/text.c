@@ -716,7 +716,8 @@ texttype(Text *t, Rune r)
 		textsetorigin(t, q0, TRUE);
 		return;
 
-/* Keybindings for scrolling up and down the text via up and down arrow keys */
+/* Keybindings for scrolling up and down 
+   the text via up and down arrow keys */
 	
 	case Kdown:
 		if(t->what == Tag)
@@ -766,27 +767,18 @@ texttype(Text *t, Rune r)
 
 	case Khome:
 		typecommit(t);
-		if(t->iq1 > t->org+t->fr.nchars) {
-			if(t->iq1 > t->file->b.nc) {
-				// should not happen, but does. and it will crash textbacknl.
-				t->iq1 = t->file->b.nc;
-			}
-			q0 = textbacknl(t, t->iq1, 1);
-			textsetorigin(t, q0, TRUE);
-		} else
-			textshow(t, t->file->b.nc, t->file->b.nc, FALSE);
+		/* go to where ^U would erase, if not already at BOL */
+		nnb = 0;
+		if(t->q0>0 && textreadc(t, t->q0-1)!='\n')
+			nnb = textbswidth(t, 0x15);
+		textshow(t, t->q0-nnb, t->q0-nnb, TRUE);
 		return;
 	case Kend:
 		typecommit(t);
-		if(t->iq1 > t->org+t->fr.nchars) {
-			if(t->iq1 > t->file->b.nc) {
-				// should not happen, but does. and it will crash textbacknl.
-				t->iq1 = t->file->b.nc;
-			}
-			q0 = textbacknl(t, t->iq1, 1);
-			textsetorigin(t, q0, TRUE);
-		} else
-			textshow(t, t->file->b.nc, t->file->b.nc, FALSE);
+		q0 = t->q0;
+		while(q0<t->file->b.nc && textreadc(t, q0)!='\n')
+			q0++;
+		textshow(t, q0, q0, TRUE);
 		return;
 		
 /* I'll keep the MAC-keybindings 'cuz im such a nice guy */
@@ -814,7 +806,9 @@ texttype(Text *t, Rune r)
 	 	typecommit(t);
 		undo(t, nil, nil, TRUE, 0, nil, 0);
 		return;
-	case 0x12:	/* Ctrl+R: redo TODO: find out how to check for shift press */
+	/* case 0x12:	
+			Ctrl+R: redo TODO: find out how to check for shift press */
+	case Kctl+'Z':	/* not tested */
 	 	typecommit(t);
 		undo(t, nil, nil, FALSE, 0, nil, 0);
 		return;
